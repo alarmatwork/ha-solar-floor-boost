@@ -1,0 +1,73 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Solar Floor Boost",
+        "description": "Pick the thermostats to raise when there is surplus solar energy.",
+        "data": {
+          "climate_entities": "Thermostats",
+          "max_temperature": "Maximum boosted target"
+        },
+        "data_description": {
+          "max_temperature": "A boost never sets a target above this value."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Solar Floor Boost is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Solar Floor Boost",
+        "data": {
+          "climate_entities": "Thermostats",
+          "max_temperature": "Maximum boosted target"
+        },
+        "data_description": {
+          "max_temperature": "A boost never sets a target above this value."
+        }
+      }
+    }
+  },
+  "entity": {
+    "number": {
+      "delta": { "name": "Boost amount" },
+      "duration": { "name": "Boost duration" }
+    },
+    "sensor": {
+      "boost_end": { "name": "Boost ends" }
+    },
+    "switch": {
+      "boost": { "name": "Boost" }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Solar Floor Boost is not set up." }
+  },
+  "services": {
+    "start": {
+      "name": "Start boost",
+      "description": "Raise thermostat targets for a while, then restore the original targets. Calling it during a boost re-applies the amount to the original targets and restarts the timer.",
+      "fields": {
+        "delta": {
+          "name": "Amount",
+          "description": "Degrees to add to each target. Defaults to the Boost amount entity."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Minutes until targets are restored. Defaults to the Boost duration entity."
+        },
+        "climate_entities": {
+          "name": "Thermostats",
+          "description": "Only boost these. Defaults to all configured thermostats."
+        }
+      }
+    },
+    "stop": {
+      "name": "Stop boost",
+      "description": "End the boost now and restore the original targets."
+    }
+  }
+}

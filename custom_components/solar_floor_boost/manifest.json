@@ -1,0 +1,14 @@
+{
+  "domain": "solar_floor_boost",
+  "name": "Solar Floor Boost",
+  "codeowners": ["@alarmatwork"],
+  "config_flow": true,
+  "dependencies": ["climate"],
+  "documentation": "https://github.com/alarmatwork/ha-solar-floor-boost",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/alarmatwork/ha-solar-floor-boost/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "1.0.0"
+}

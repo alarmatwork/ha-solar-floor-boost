@@ -1,0 +1,38 @@
+# Solar surplus -> raise floor heating.
+# Paste into Settings > Automations > Create > ⋮ > Edit in YAML,
+# then replace the sensor entity IDs with your own.
+alias: "Solar surplus - boost floor heating"
+description: "Battery full, sun still producing and cold outside: store surplus as heat"
+mode: single
+triggers:
+  - trigger: numeric_state
+    entity_id: sensor.battery_soc
+    above: 97
+    for: "00:05:00"
+  # Re-check regularly so a new boost starts after the previous one ends
+  - trigger: time_pattern
+    minutes: "/10"
+conditions:
+  - condition: state
+    entity_id: switch.solar_floor_boost_boost
+    state: "off"
+  - condition: numeric_state
+    entity_id: sensor.battery_soc
+    above: 97
+  # Still enough sun to store (W)
+  - condition: numeric_state
+    entity_id: sensor.pv_power
+    above: 1500
+  - condition: numeric_state
+    entity_id: weather.home
+    attribute: temperature
+    below: 20
+actions:
+  - action: solar_floor_boost.start
+    data:
+      delta: 2
+      duration: 120
+      # Optional: limit to some thermostats, otherwise all configured ones
+      # climate_entities:
+      #   - climate.living_room
+      #   - climate.kitchen
