@@ -9,6 +9,8 @@ thermostat by 1 °C for 2 hours. Control it from the UI, or start it from an
 automation with your own conditions (battery level, PV power, outdoor
 temperature, ...).
 
+![Boost card with thermostats raised by 2 °C](docs/screenshot.png)
+
 ## Installation
 
 ### HACS (custom repository)
@@ -36,6 +38,31 @@ You can change both later via **Configure**.
 | `number.solar_floor_boost_boost_amount` | Degrees to add (default 1 °C). |
 | `number.solar_floor_boost_boost_duration` | Minutes (default 120). |
 | `sensor.solar_floor_boost_boost_ends` | When the boost ends. Attributes list each thermostat's original (`baseline`) and boosted (`target`) value. |
+
+## Dashboard card
+
+The card in the screenshot (Edit dashboard → Add card → Manual):
+
+```yaml
+type: entities
+title: Floor heating boost
+show_header_toggle: false
+entities:
+  - entity: switch.solar_floor_boost_boost
+    name: Boost
+  - entity: number.solar_floor_boost_boost_amount
+    name: Boost amount
+  - entity: number.solar_floor_boost_boost_duration
+    name: Boost duration
+  - type: conditional
+    conditions:
+      - entity: switch.solar_floor_boost_boost
+        state: "on"
+    row:
+      entity: sensor.solar_floor_boost_boost_ends
+      name: Boost ends
+      format: relative
+```
 
 ## Actions
 
