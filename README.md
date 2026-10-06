@@ -41,7 +41,16 @@ You can change both later via **Configure**.
 
 ## Dashboard card
 
-The card in the screenshot (Edit dashboard → Add card → Manual):
+The integration ships the card in the screenshot. Edit dashboard → **Add card**
+→ **By card** (or **Browse all cards**) → **Solar Floor Boost**:
+
+```yaml
+type: custom:solar-floor-boost-card
+title: Floor heating boost  # optional
+end_format: relative        # optional: relative, time, datetime, ...
+```
+
+If you prefer a plain entities card that you can customise:
 
 ```yaml
 type: entities

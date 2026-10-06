@@ -122,3 +122,16 @@ async def test_config_flow(hass: HomeAssistant):
     assert result["type"] == "create_entry"
     await hass.async_block_till_done()
     assert entry.options["max_temperature"] == 25
+
+
+async def test_dashboard_card_registered(hass: HomeAssistant):
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    hass.config.components.add("frontend")
+    hass.http = MagicMock(async_register_static_paths=AsyncMock())
+    with patch(f"custom_components.{DOMAIN}.add_extra_js_url") as add_js:
+        assert await async_setup_component(hass, DOMAIN, {})
+    (paths,), _ = hass.http.async_register_static_paths.call_args
+    assert paths[0].url_path == "/solar_floor_boost/solar-floor-boost-card.js"
+    assert paths[0].path.endswith("frontend/solar-floor-boost-card.js")
+    add_js.assert_called_once_with(hass, "/solar_floor_boost/solar-floor-boost-card.js?v=1.1.0")
