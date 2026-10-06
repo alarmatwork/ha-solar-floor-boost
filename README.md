@@ -65,7 +65,8 @@ for a complete "battery full + sun + cold outside" automation.
   (by you, a schedule or an app), it is left as is at the end.
 - **Starting again during a boost** applies the new amount to the original
   targets instead of stacking, and restarts the timer.
-- Thermostats that are **off** or **unavailable** at start are skipped. One that
+- All selected thermostats are boosted, whatever their mode (heat, off, idle).
+  Thermostats that are **unavailable** at start are skipped. One that
   is unavailable when the boost ends is restored as soon as it comes back
   (listed in the sensor's `pending_restore` attribute).
 - The boosted target is rounded to the thermostat's temperature step and capped

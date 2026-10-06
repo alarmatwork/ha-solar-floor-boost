@@ -44,7 +44,7 @@ async def test_switch_boost_and_restore(hass: HomeAssistant, freezer: FrozenDate
     await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.solar_floor_boost_boost"}, blocking=True)
     assert t(hass, A) == 23.0
     assert t(hass, B) == 28.0  # capped by max_temperature
-    assert t(hass, OFF) == 20.0  # off thermostats are skipped
+    assert t(hass, OFF) == 21.0  # boosted even when off
     assert hass.states.get("switch.solar_floor_boost_boost").state == "on"
     sensor = hass.states.get("sensor.solar_floor_boost_boost_ends")
     assert sensor.attributes["boosted"][A] == {"baseline": 22.0, "target": 23.0}
@@ -52,7 +52,7 @@ async def test_switch_boost_and_restore(hass: HomeAssistant, freezer: FrozenDate
     freezer.tick(timedelta(minutes=121))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    assert t(hass, A) == 22.0 and t(hass, B) == 27.5
+    assert t(hass, A) == 22.0 and t(hass, B) == 27.5 and t(hass, OFF) == 20.0
     assert hass.states.get("switch.solar_floor_boost_boost").state == "off"
 
 

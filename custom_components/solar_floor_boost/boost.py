@@ -16,7 +16,6 @@ from homeassistant.components.climate.const import (
     ATTR_TARGET_TEMP_STEP,
     DOMAIN as CLIMATE_DOMAIN,
     SERVICE_SET_TEMPERATURE,
-    HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -234,9 +233,6 @@ class BoostManager:
         if state is None or state.state in UNAVAILABLE_STATES:
             _LOGGER.warning("Skipping %s: unavailable", entity_id)
             return False
-        if state.state == HVACMode.OFF:
-            _LOGGER.info("Skipping %s: thermostat is off", entity_id)
-            return False
         if (current := state.attributes.get(ATTR_TEMPERATURE)) is None:
             _LOGGER.warning("Skipping %s: no target temperature", entity_id)
             return False
@@ -248,7 +244,7 @@ class BoostManager:
         baseline = rec.baseline if rec and _same(current, rec.target) else current
         target = self._compute_target(state, baseline, delta)
         if target <= baseline:
-            _LOGGER.info(
+            _LOGGER.warning(
                 "Skipping %s: baseline %s is already at the cap", entity_id, baseline
             )
             return False
@@ -256,6 +252,7 @@ class BoostManager:
             entity_id, target
         ):
             return False
+        _LOGGER.info("Boosted %s: %s -> %s", entity_id, baseline, target)
         self.boosted[entity_id] = BoostedClimate(baseline=baseline, target=target)
         return True
 
