@@ -107,7 +107,7 @@ class SolarFloorBoostCard extends HTMLElement {
 }
 
 // Minutes. Fine steps in the first hour, coarser after.
-const DURATION_PRESETS = [15, 30, 45, 60, 90, 120, 150, 180, 210, 240, 300, 360, 420, 480];
+const DURATION_PRESETS = [15, 30, 45, 60, 90, 120, 150, 180, 210, 240, 300, 360, 480, 720];
 
 // 15 -> "15m", 60 -> "1h", 90 -> "1h 30m"
 function formatDuration(minutes) {

@@ -194,12 +194,12 @@ async def test_upgrade_keeps_user_hidden(hass: HomeAssistant):
     assert registry.async_get(number.entity_id).hidden_by is er.RegistryEntryHider.USER
 
 
-async def test_duration_number_visible_up_to_8h(hass: HomeAssistant):
+async def test_duration_number_visible_up_to_12h(hass: HomeAssistant):
     from homeassistant.helpers import entity_registry as er
 
     await _setup(hass)
     entity_id = "number.solar_floor_boost_boost_duration"
     assert er.async_get(hass).async_get(entity_id).hidden_by is None
     state = hass.states.get(entity_id)
-    assert (state.attributes["min"], state.attributes["max"], state.attributes["step"]) == (15, 480, 15)
+    assert (state.attributes["min"], state.attributes["max"], state.attributes["step"]) == (15, 720, 15)
     assert hass.states.get("select.solar_floor_boost_boost_duration") is None
