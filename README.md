@@ -119,6 +119,12 @@ pip install -r requirements_test.txt
 pytest
 ```
 
+## Releasing
+
+Bump `version` in `custom_components/solar_floor_boost/manifest.json` and push
+to `main`. The Release workflow tags `v<version>` and publishes a GitHub
+release, which HACS offers as an update.
+
 ## License
 
 MIT

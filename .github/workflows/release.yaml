@@ -1,0 +1,28 @@
+name: Release
+
+# Creates a GitHub release (which HACS uses as the version) whenever the
+# version in manifest.json changes on main.
+on:
+  push:
+    branches: [main]
+    paths: [custom_components/solar_floor_boost/manifest.json]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release if version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(jq -r .version custom_components/solar_floor_boost/manifest.json)
+          tag="v${version}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "$tag already released"
+          else
+            gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --generate-notes
+          fi
