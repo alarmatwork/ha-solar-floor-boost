@@ -142,7 +142,9 @@ class SolarFloorBoostDurationRow extends HTMLElement {
     this._row.hass = hass;
     if (this._dragging) return;
     const state = hass.states[this._config.entity];
-    const minutes = Number(state?.state);
+    // The duration number is in hours since 1.6.0 (minutes before).
+    this._minutesPerUnit = state?.attributes.unit_of_measurement === "h" ? 60 : 1;
+    const minutes = Number(state?.state) * this._minutesPerUnit;
     const known = Number.isFinite(minutes);
     this._input.value = known ? nearestPreset(minutes) : 0;
     this._input.disabled = !known;
@@ -179,7 +181,7 @@ class SolarFloorBoostDurationRow extends HTMLElement {
       this._dragging = false;
       this._hass.callService("number", "set_value", {
         entity_id: this._config.entity,
-        value: DURATION_PRESETS[this._input.value],
+        value: DURATION_PRESETS[this._input.value] / this._minutesPerUnit,
       });
     });
     wrap.append(this._input, this._label);

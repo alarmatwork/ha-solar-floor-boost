@@ -24,7 +24,12 @@ from .entity import BoostEntity
 class BoostNumberDescription(NumberEntityDescription):
     """``key`` is also the BoostManager attribute the value is written to."""
 
-    default: float
+    default: float  # in BoostManager units
+    # BoostManager value = entity value * scale (duration: hours -> minutes).
+    scale: float = 1
+    # Restored values in this unit are already BoostManager units (the
+    # duration was in minutes up to 1.5.x).
+    legacy_unit: str | None = None
 
 
 NUMBERS = (
@@ -42,12 +47,15 @@ NUMBERS = (
         key="duration",
         icon="mdi:timer-outline",
         device_class=NumberDeviceClass.DURATION,
-        native_min_value=15,
-        native_max_value=720,
-        native_step=15,
-        native_unit_of_measurement=UnitOfTime.MINUTES,
+        # Hours, so Home Assistant displays it as "4h 45m"; 15-minute steps.
+        native_min_value=0.25,
+        native_max_value=12,
+        native_step=0.25,
+        native_unit_of_measurement=UnitOfTime.HOURS,
         mode=NumberMode.SLIDER,
         default=DEFAULT_DURATION,
+        scale=60,
+        legacy_unit=UnitOfTime.MINUTES,
     ),
 )
 
@@ -73,17 +81,21 @@ class BoostNumber(BoostEntity, RestoreNumber):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
+        description = self.entity_description
         last = await self.async_get_last_number_data()
-        value = (
-            last.native_value
-            if last and last.native_value is not None
-            else self.entity_description.default
-        )
-        self._manager.async_set_default(self.entity_description.key, value)
+        if last is None or last.native_value is None:
+            value = description.default
+        elif last.native_unit_of_measurement == description.legacy_unit:
+            value = last.native_value
+        else:
+            value = last.native_value * description.scale
+        self._manager.async_set_default(description.key, value)
 
     @property
     def native_value(self) -> float:
-        return getattr(self._manager, self.entity_description.key)
+        description = self.entity_description
+        return getattr(self._manager, description.key) / description.scale
 
     async def async_set_native_value(self, value: float) -> None:
-        self._manager.async_set_default(self.entity_description.key, value)
+        description = self.entity_description
+        self._manager.async_set_default(description.key, value * description.scale)

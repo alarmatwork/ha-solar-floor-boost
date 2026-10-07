@@ -40,7 +40,7 @@ def t(hass, eid):
 async def test_switch_boost_and_restore(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
     entry, calls = await _setup(hass)
     assert hass.states.get("number.solar_floor_boost_boost_amount").state == "1.0"
-    assert hass.states.get("number.solar_floor_boost_boost_duration").state == "120"
+    assert hass.states.get("number.solar_floor_boost_boost_duration").state == "2.0"
     await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.solar_floor_boost_boost"}, blocking=True)
     assert t(hass, A) == 23.0
     assert t(hass, B) == 28.0  # capped by max_temperature
@@ -142,7 +142,7 @@ async def test_duration_15_minutes(hass: HomeAssistant, freezer):
     entry, calls = await _setup(hass)
     await hass.services.async_call(
         "number", "set_value",
-        {"entity_id": "number.solar_floor_boost_boost_duration", "value": 15}, blocking=True,
+        {"entity_id": "number.solar_floor_boost_boost_duration", "value": 0.25}, blocking=True,
     )
     await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.solar_floor_boost_boost"}, blocking=True)
     assert t(hass, A) == 23.0
@@ -173,7 +173,7 @@ async def test_upgrade_from_1_4_0(hass: HomeAssistant):
     assert entry.minor_version == 3
     assert registry.async_get_entity_id("select", DOMAIN, f"{entry.entry_id}_duration") is None
     assert registry.async_get(number.entity_id).hidden_by is None
-    assert hass.states.get(number.entity_id).state == "120"
+    assert hass.states.get(number.entity_id).state == "2.0"
 
 
 async def test_upgrade_keeps_user_hidden(hass: HomeAssistant):
@@ -194,12 +194,32 @@ async def test_upgrade_keeps_user_hidden(hass: HomeAssistant):
     assert registry.async_get(number.entity_id).hidden_by is er.RegistryEntryHider.USER
 
 
-async def test_duration_number_visible_up_to_12h(hass: HomeAssistant):
+async def test_duration_number_in_hours(hass: HomeAssistant):
     from homeassistant.helpers import entity_registry as er
 
     await _setup(hass)
     entity_id = "number.solar_floor_boost_boost_duration"
     assert er.async_get(hass).async_get(entity_id).hidden_by is None
     state = hass.states.get(entity_id)
-    assert (state.attributes["min"], state.attributes["max"], state.attributes["step"]) == (15, 720, 15)
+    assert (state.attributes["min"], state.attributes["max"], state.attributes["step"]) == (0.25, 12, 0.25)
+    assert state.attributes["unit_of_measurement"] == "h"
     assert hass.states.get("select.solar_floor_boost_boost_duration") is None
+
+
+async def test_restore_duration_saved_in_minutes(hass: HomeAssistant, freezer):
+    """Up to 1.5.x the duration was saved in minutes; it must come back as hours."""
+    from homeassistant.core import State
+    from pytest_homeassistant_custom_component.common import mock_restore_cache_with_extra_data
+
+    mock_restore_cache_with_extra_data(hass, [
+        (State("number.solar_floor_boost_boost_duration", "90"),
+         {"native_max_value": 720, "native_min_value": 15, "native_step": 15,
+          "native_unit_of_measurement": "min", "native_value": 90}),
+    ])
+    entry, calls = await _setup(hass)
+    assert hass.states.get("number.solar_floor_boost_boost_duration").state == "1.5"
+    await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.solar_floor_boost_boost"}, blocking=True)
+    freezer.tick(timedelta(minutes=91))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert t(hass, A) == 22.0  # boost lasted 90 minutes
