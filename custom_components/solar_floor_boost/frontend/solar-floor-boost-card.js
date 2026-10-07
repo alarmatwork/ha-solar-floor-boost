@@ -183,15 +183,28 @@ class SolarFloorBoostDurationRow extends HTMLElement {
   }
 }
 
-if (!customElements.get("solar-floor-boost-duration-row")) {
-  customElements.define(
-    "solar-floor-boost-duration-row",
-    SolarFloorBoostDurationRow
-  );
+// The frontend's app bundle installs a scoped custom element registry
+// polyfill that replaces window.customElements. This module is loaded in
+// parallel and can run first; elements defined on the old registry are then
+// invisible to Lovelace (endless spinner in the card picker). So wait until
+// the app has defined <home-assistant> on the current registry.
+async function whenAppReady(timeoutMs = 60000) {
+  const start = Date.now();
+  while (
+    !window.customElements.get("home-assistant") &&
+    Date.now() - start < timeoutMs
+  ) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
 }
 
-if (!customElements.get("solar-floor-boost-card")) {
-  customElements.define("solar-floor-boost-card", SolarFloorBoostCard);
+function register() {
+  const registry = window.customElements;
+  if (!registry.get("solar-floor-boost-duration-row")) {
+    registry.define("solar-floor-boost-duration-row", SolarFloorBoostDurationRow);
+  }
+  if (registry.get("solar-floor-boost-card")) return;
+  registry.define("solar-floor-boost-card", SolarFloorBoostCard);
   window.customCards = window.customCards || [];
   window.customCards.push({
     type: "solar-floor-boost-card",
@@ -211,3 +224,5 @@ if (!customElements.get("solar-floor-boost-card")) {
     documentationURL: "https://github.com/alarmatwork/ha-solar-floor-boost",
   });
 }
+
+whenAppReady().then(register);

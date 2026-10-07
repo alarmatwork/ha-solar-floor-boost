@@ -11,5 +11,5 @@
   "issue_tracker": "https://github.com/alarmatwork/ha-solar-floor-boost/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "1.3.1"
+  "version": "1.3.2"
 }
