@@ -28,7 +28,7 @@ from .const import (
     SERVICE_STOP,
 )
 
-PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.SWITCH]
+PLATFORMS = [Platform.NUMBER, Platform.SENSOR, Platform.SWITCH]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -103,20 +103,18 @@ async def async_setup_entry(
 async def async_migrate_entry(
     hass: HomeAssistant, entry: SolarFloorBoostConfigEntry
 ) -> bool:
-    if entry.version == 1 and entry.minor_version < 2:
-        # 1.4.0: the duration preset select is the UI control, so hide the
-        # minutes number on the device page (it keeps working everywhere).
-        # Done once, so un-hiding it later sticks.
+    if entry.version == 1 and entry.minor_version < 3:
+        # 1.4.0 added a duration select and hid the minutes number; the
+        # number is the only duration entity again (presets live in the card).
         registry = er.async_get(hass)
+        unique_id = f"{entry.entry_id}_duration"
+        if select := registry.async_get_entity_id(Platform.SELECT, DOMAIN, unique_id):
+            registry.async_remove(select)
         if (
-            entity_id := registry.async_get_entity_id(
-                Platform.NUMBER, DOMAIN, f"{entry.entry_id}_duration"
-            )
-        ) and registry.async_get(entity_id).hidden_by is None:
-            registry.async_update_entity(
-                entity_id, hidden_by=er.RegistryEntryHider.INTEGRATION
-            )
-        hass.config_entries.async_update_entry(entry, minor_version=2)
+            number := registry.async_get_entity_id(Platform.NUMBER, DOMAIN, unique_id)
+        ) and registry.async_get(number).hidden_by is er.RegistryEntryHider.INTEGRATION:
+            registry.async_update_entity(number, hidden_by=None)
+        hass.config_entries.async_update_entry(entry, minor_version=3)
     return True
 
 

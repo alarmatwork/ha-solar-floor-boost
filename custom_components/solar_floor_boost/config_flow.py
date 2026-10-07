@@ -44,7 +44,7 @@ SCHEMA = vol.Schema(
 
 class SolarFloorBoostConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
-    MINOR_VERSION = 2
+    MINOR_VERSION = 3
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None

@@ -40,11 +40,6 @@
         "name": "Boost duration"
       }
     },
-    "select": {
-      "duration": {
-        "name": "Boost duration"
-      }
-    },
     "sensor": {
       "boost_end": {
         "name": "Boost ends"

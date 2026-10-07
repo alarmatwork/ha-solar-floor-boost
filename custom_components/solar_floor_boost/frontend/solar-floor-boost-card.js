@@ -18,7 +18,7 @@ function findEntities(hass) {
   );
   for (const entry of Object.values(hass.entities || {})) {
     const key = entry.translation_key;
-    // Same domain as the default: "duration" is both a number and a select.
+    // Same domain as the default (1.4.0 also had a "duration" select).
     if (
       entry.platform === DOMAIN &&
       key in ROWS &&
@@ -107,7 +107,7 @@ class SolarFloorBoostCard extends HTMLElement {
 }
 
 // Minutes. Fine steps in the first hour, coarser after.
-const DURATION_PRESETS = [15, 30, 45, 60, 90, 120, 150, 180, 210, 240, 300, 360, 480, 720];
+const DURATION_PRESETS = [15, 30, 45, 60, 90, 120, 150, 180, 210, 240, 300, 360, 420, 480];
 
 // 15 -> "15m", 60 -> "1h", 90 -> "1h 30m"
 function formatDuration(minutes) {
@@ -152,9 +152,9 @@ class SolarFloorBoostDurationRow extends HTMLElement {
   _render() {
     const style = document.createElement("style");
     style.textContent = `
-      .wrap { display: flex; align-items: center; gap: 12px; }
-      input { width: 140px; accent-color: var(--primary-color); cursor: pointer; }
-      .label { min-width: 4.5em; text-align: end; white-space: nowrap; }
+      .wrap { display: flex; align-items: center; gap: 8px; }
+      input { width: 110px; accent-color: var(--primary-color); cursor: pointer; }
+      .label { min-width: 3.6em; text-align: end; white-space: nowrap; }
     `;
     // HA's own row element gives the icon/name layout of the other rows.
     const row = document.createElement("hui-generic-entity-row");

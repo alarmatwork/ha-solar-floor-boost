@@ -43,14 +43,11 @@ NUMBERS = (
         icon="mdi:timer-outline",
         device_class=NumberDeviceClass.DURATION,
         native_min_value=15,
-        native_max_value=720,
+        native_max_value=480,
         native_step=15,
         native_unit_of_measurement=UnitOfTime.MINUTES,
         mode=NumberMode.SLIDER,
         default=DEFAULT_DURATION,
-        # The preset select is the UI control; this stays for cards and
-        # automations that use the minutes value.
-        entity_registry_visible_default=False,
     ),
 )
 

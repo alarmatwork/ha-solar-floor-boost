@@ -152,53 +152,54 @@ async def test_duration_15_minutes(hass: HomeAssistant, freezer):
     assert t(hass, A) == 22.0
 
 
-async def test_duration_controls_in_sync(hass: HomeAssistant):
-    entry, calls = await _setup(hass)
-    number, select = "number.solar_floor_boost_boost_duration", "select.solar_floor_boost_boost_duration"
-    assert hass.states.get(select).attributes["options"] == [
-        "15m", "30m", "45m", "1h", "1h 30m", "2h", "2h 30m", "3h", "3h 30m", "4h", "5h", "6h", "8h", "12h",
-    ]
-    assert hass.states.get(select).state == "2h"
-    await hass.services.async_call("select", "select_option", {"entity_id": select, "option": "3h 30m"}, blocking=True)
-    assert hass.states.get(number).state == "210"
-    await hass.services.async_call("number", "set_value", {"entity_id": number, "value": 45}, blocking=True)
-    assert hass.states.get(select).state == "45m"
-
-
-async def test_upgrade_hides_minutes_number_once(hass: HomeAssistant):
-    """Existing installs: number keeps its entity ID but is hidden; select added."""
+async def test_upgrade_from_1_4_0(hass: HomeAssistant):
+    """1.4.0 hid the minutes number and added a select; undo both."""
     from homeassistant.helpers import entity_registry as er
 
     entry = MockConfigEntry(
-        domain=DOMAIN, title="Solar Floor Boost", minor_version=1,
+        domain=DOMAIN, title="Solar Floor Boost", minor_version=2,
         options={"climate_entities": [], "max_temperature": 28},
     )
     entry.add_to_hass(hass)
     registry = er.async_get(hass)
-    old = registry.async_get_or_create(
+    number = registry.async_get_or_create(
         "number", DOMAIN, f"{entry.entry_id}_duration", config_entry=entry,
         suggested_object_id="solar_floor_boost_boost_duration",
+        hidden_by=er.RegistryEntryHider.INTEGRATION,
     )
-    assert old.hidden_by is None
+    registry.async_get_or_create("select", DOMAIN, f"{entry.entry_id}_duration", config_entry=entry)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    assert entry.minor_version == 2
-    number = registry.async_get(old.entity_id)
-    assert number.hidden_by is er.RegistryEntryHider.INTEGRATION
-    assert hass.states.get(old.entity_id).state == "120"  # old cards still work
-    assert hass.states.get("select.solar_floor_boost_boost_duration").state == "2h"
+    assert entry.minor_version == 3
+    assert registry.async_get_entity_id("select", DOMAIN, f"{entry.entry_id}_duration") is None
+    assert registry.async_get(number.entity_id).hidden_by is None
+    assert hass.states.get(number.entity_id).state == "120"
 
-    # The user un-hides it: a reload must not hide it again.
-    registry.async_update_entity(old.entity_id, hidden_by=None)
-    await hass.config_entries.async_reload(entry.entry_id)
+
+async def test_upgrade_keeps_user_hidden(hass: HomeAssistant):
+    from homeassistant.helpers import entity_registry as er
+
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Solar Floor Boost", minor_version=2,
+        options={"climate_entities": [], "max_temperature": 28},
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    number = registry.async_get_or_create(
+        "number", DOMAIN, f"{entry.entry_id}_duration", config_entry=entry,
+        hidden_by=er.RegistryEntryHider.USER,
+    )
+    assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    assert registry.async_get(old.entity_id).hidden_by is None
+    assert registry.async_get(number.entity_id).hidden_by is er.RegistryEntryHider.USER
 
 
-async def test_new_install_number_hidden(hass: HomeAssistant):
+async def test_duration_number_visible_up_to_8h(hass: HomeAssistant):
     from homeassistant.helpers import entity_registry as er
 
     await _setup(hass)
-    registry = er.async_get(hass)
-    assert registry.async_get("number.solar_floor_boost_boost_duration").hidden_by is not None
-    assert registry.async_get("number.solar_floor_boost_boost_amount").hidden_by is None
+    entity_id = "number.solar_floor_boost_boost_duration"
+    assert er.async_get(hass).async_get(entity_id).hidden_by is None
+    state = hass.states.get(entity_id)
+    assert (state.attributes["min"], state.attributes["max"], state.attributes["step"]) == (15, 480, 15)
+    assert hass.states.get("select.solar_floor_boost_boost_duration") is None
