@@ -28,7 +28,7 @@ from .const import (
     SERVICE_STOP,
 )
 
-PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.SWITCH]
+PLATFORMS = [Platform.NUMBER, Platform.SENSOR, Platform.SWITCH]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -91,10 +91,11 @@ async def _async_register_card(hass: HomeAssistant) -> None:
 async def async_setup_entry(
     hass: HomeAssistant, entry: SolarFloorBoostConfigEntry
 ) -> bool:
-    # Up to 1.2.x the duration was a number entity; it's a select now.
+    # 1.3.0 briefly had the duration as a select entity; it's the number
+    # entity again (as before), with presets in the dashboard card.
     registry = er.async_get(hass)
     if old := registry.async_get_entity_id(
-        Platform.NUMBER, DOMAIN, f"{entry.entry_id}_duration"
+        Platform.SELECT, DOMAIN, f"{entry.entry_id}_duration"
     ):
         registry.async_remove(old)
 

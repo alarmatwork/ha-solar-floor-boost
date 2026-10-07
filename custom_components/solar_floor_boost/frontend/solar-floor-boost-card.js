@@ -7,7 +7,7 @@ const DOMAIN = "solar_floor_boost";
 const ROWS = {
   boost: ["switch.solar_floor_boost_boost", "Boost"],
   delta: ["number.solar_floor_boost_boost_amount", "Boost amount"],
-  duration: ["select.solar_floor_boost_boost_duration", "Boost duration"],
+  duration: ["number.solar_floor_boost_boost_duration", "Boost duration"],
   boost_end: ["sensor.solar_floor_boost_boost_ends", "Boost ends"],
 };
 
@@ -100,10 +100,29 @@ class SolarFloorBoostCard extends HTMLElement {
   }
 }
 
-// Slider row for a select entity: one evenly spaced step per option, the
-// option itself ("1h 30m") as the label. Usable in any entities card:
+// Minutes. Fine steps in the first hour, coarser after.
+const DURATION_PRESETS = [15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 480, 720];
+
+// 15 -> "15m", 60 -> "1h", 90 -> "1h 30m"
+function formatDuration(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const rest = Math.round(minutes % 60);
+  if (!hours) return `${rest}m`;
+  return rest ? `${hours}h ${rest}m` : `${hours}h`;
+}
+
+function nearestPreset(minutes) {
+  let best = 0;
+  DURATION_PRESETS.forEach((preset, i) => {
+    if (Math.abs(preset - minutes) < Math.abs(DURATION_PRESETS[best] - minutes)) best = i;
+  });
+  return best;
+}
+
+// Slider row for the duration number entity: one evenly spaced step per
+// preset and a "1h 30m" label. Usable in any entities card:
 //   - type: custom:solar-floor-boost-duration-row
-//     entity: select.solar_floor_boost_boost_duration
+//     entity: number.solar_floor_boost_boost_duration
 class SolarFloorBoostDurationRow extends HTMLElement {
   setConfig(config) {
     if (!config.entity) throw new Error("entity is required");
@@ -115,14 +134,13 @@ class SolarFloorBoostDurationRow extends HTMLElement {
     this._hass = hass;
     if (!this._row) this._render();
     this._row.hass = hass;
+    if (this._dragging) return;
     const state = hass.states[this._config.entity];
-    this._options = state?.attributes.options || [];
-    if (!this._dragging) {
-      this._input.max = Math.max(this._options.length - 1, 0);
-      this._input.value = Math.max(this._options.indexOf(state?.state), 0);
-      this._input.disabled = !state || state.state === "unavailable";
-      this._label.textContent = state ? state.state : "";
-    }
+    const minutes = Number(state?.state);
+    const known = Number.isFinite(minutes);
+    this._input.value = known ? nearestPreset(minutes) : 0;
+    this._input.disabled = !known;
+    this._label.textContent = known ? formatDuration(minutes) : state?.state ?? "";
   }
 
   _render() {
@@ -140,6 +158,7 @@ class SolarFloorBoostDurationRow extends HTMLElement {
     this._input = Object.assign(document.createElement("input"), {
       type: "range",
       min: 0,
+      max: DURATION_PRESETS.length - 1,
       step: 1,
     });
     this._label = Object.assign(document.createElement("span"), {
@@ -148,17 +167,14 @@ class SolarFloorBoostDurationRow extends HTMLElement {
     this._input.addEventListener("click", (ev) => ev.stopPropagation());
     this._input.addEventListener("input", () => {
       this._dragging = true;
-      this._label.textContent = this._options[this._input.value] ?? "";
+      this._label.textContent = formatDuration(DURATION_PRESETS[this._input.value]);
     });
     this._input.addEventListener("change", () => {
       this._dragging = false;
-      const option = this._options[this._input.value];
-      if (option !== undefined) {
-        this._hass.callService("select", "select_option", {
-          entity_id: this._config.entity,
-          option,
-        });
-      }
+      this._hass.callService("number", "set_value", {
+        entity_id: this._config.entity,
+        value: DURATION_PRESETS[this._input.value],
+      });
     });
     wrap.append(this._input, this._label);
     row.append(wrap);

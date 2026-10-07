@@ -1,21 +1,22 @@
-"""Boost amount, adjustable from the UI."""
+"""Boost amount and duration, adjustable from the UI."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 from homeassistant.components.number import (
+    NumberDeviceClass,
     NumberEntityDescription,
     NumberMode,
     RestoreNumber,
 )
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import SolarFloorBoostConfigEntry
 from .boost import BoostManager
-from .const import DEFAULT_DELTA
+from .const import DEFAULT_DELTA, DEFAULT_DURATION
 from .entity import BoostEntity
 
 
@@ -36,6 +37,17 @@ NUMBERS = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         mode=NumberMode.SLIDER,
         default=DEFAULT_DELTA,
+    ),
+    BoostNumberDescription(
+        key="duration",
+        icon="mdi:timer-outline",
+        device_class=NumberDeviceClass.DURATION,
+        native_min_value=15,
+        native_max_value=720,
+        native_step=15,
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        mode=NumberMode.SLIDER,
+        default=DEFAULT_DURATION,
     ),
 )
 

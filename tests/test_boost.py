@@ -40,7 +40,7 @@ def t(hass, eid):
 async def test_switch_boost_and_restore(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
     entry, calls = await _setup(hass)
     assert hass.states.get("number.solar_floor_boost_boost_amount").state == "1.0"
-    assert hass.states.get("select.solar_floor_boost_boost_duration").state == "2h"
+    assert hass.states.get("number.solar_floor_boost_boost_duration").state == "120"
     await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.solar_floor_boost_boost"}, blocking=True)
     assert t(hass, A) == 23.0
     assert t(hass, B) == 28.0  # capped by max_temperature
@@ -138,15 +138,11 @@ async def test_dashboard_card_registered(hass: HomeAssistant):
     assert url.startswith("/solar_floor_boost/solar-floor-boost-card.js?v=")
 
 
-async def test_duration_select(hass: HomeAssistant, freezer):
+async def test_duration_15_minutes(hass: HomeAssistant, freezer):
     entry, calls = await _setup(hass)
-    state = hass.states.get("select.solar_floor_boost_boost_duration")
-    assert state.attributes["options"] == [
-        "15m", "30m", "45m", "1h", "1h 30m", "2h", "2h 30m", "3h", "4h", "5h", "6h", "8h", "12h",
-    ]
     await hass.services.async_call(
-        "select", "select_option",
-        {"entity_id": "select.solar_floor_boost_boost_duration", "option": "15m"}, blocking=True,
+        "number", "set_value",
+        {"entity_id": "number.solar_floor_boost_boost_duration", "value": 15}, blocking=True,
     )
     await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.solar_floor_boost_boost"}, blocking=True)
     assert t(hass, A) == 23.0
@@ -156,14 +152,21 @@ async def test_duration_select(hass: HomeAssistant, freezer):
     assert t(hass, A) == 22.0
 
 
-async def test_old_duration_number_removed(hass: HomeAssistant):
+async def test_upgrade_from_1_3_0(hass: HomeAssistant):
+    """1.3.0 deleted the duration number and added a select; undo that."""
     from homeassistant.helpers import entity_registry as er
 
     entry = MockConfigEntry(domain=DOMAIN, title="Solar Floor Boost", options={"climate_entities": [], "max_temperature": 28})
     entry.add_to_hass(hass)
     registry = er.async_get(hass)
-    registry.async_get_or_create("number", DOMAIN, f"{entry.entry_id}_duration", config_entry=entry)
+    old = registry.async_get_or_create(
+        "number", DOMAIN, f"{entry.entry_id}_duration", config_entry=entry,
+        suggested_object_id="solar_floor_boost_boost_duration",
+    )
+    registry.async_remove(old.entity_id)
+    registry.async_get_or_create("select", DOMAIN, f"{entry.entry_id}_duration", config_entry=entry)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    assert registry.async_get_entity_id("number", DOMAIN, f"{entry.entry_id}_duration") is None
-    assert registry.async_get_entity_id("number", DOMAIN, f"{entry.entry_id}_delta")
+    assert registry.async_get_entity_id("select", DOMAIN, f"{entry.entry_id}_duration") is None
+    assert registry.async_get_entity_id("number", DOMAIN, f"{entry.entry_id}_duration") == old.entity_id
+    assert hass.states.get(old.entity_id).state == "120"
