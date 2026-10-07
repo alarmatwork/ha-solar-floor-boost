@@ -17,8 +17,14 @@ function findEntities(hass) {
     Object.entries(ROWS).map(([key, [entityId]]) => [key, entityId])
   );
   for (const entry of Object.values(hass.entities || {})) {
-    if (entry.platform === DOMAIN && entry.translation_key in ids) {
-      ids[entry.translation_key] = entry.entity_id;
+    const key = entry.translation_key;
+    // Same domain as the default: "duration" is both a number and a select.
+    if (
+      entry.platform === DOMAIN &&
+      key in ROWS &&
+      entry.entity_id.split(".")[0] === ROWS[key][0].split(".")[0]
+    ) {
+      ids[key] = entry.entity_id;
     }
   }
   return ids;
@@ -101,7 +107,7 @@ class SolarFloorBoostCard extends HTMLElement {
 }
 
 // Minutes. Fine steps in the first hour, coarser after.
-const DURATION_PRESETS = [15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 480, 720];
+const DURATION_PRESETS = [15, 30, 45, 60, 90, 120, 150, 180, 210, 240, 300, 360, 480, 720];
 
 // 15 -> "15m", 60 -> "1h", 90 -> "1h 30m"
 function formatDuration(minutes) {

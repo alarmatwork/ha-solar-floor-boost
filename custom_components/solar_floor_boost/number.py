@@ -48,6 +48,9 @@ NUMBERS = (
         native_unit_of_measurement=UnitOfTime.MINUTES,
         mode=NumberMode.SLIDER,
         default=DEFAULT_DURATION,
+        # The preset select is the UI control; this stays for cards and
+        # automations that use the minutes value.
+        entity_registry_visible_default=False,
     ),
 )
 
@@ -79,12 +82,11 @@ class BoostNumber(BoostEntity, RestoreNumber):
             if last and last.native_value is not None
             else self.entity_description.default
         )
-        setattr(self._manager, self.entity_description.key, value)
+        self._manager.async_set_default(self.entity_description.key, value)
 
     @property
     def native_value(self) -> float:
         return getattr(self._manager, self.entity_description.key)
 
     async def async_set_native_value(self, value: float) -> None:
-        setattr(self._manager, self.entity_description.key, value)
-        self.async_write_ha_state()
+        self._manager.async_set_default(self.entity_description.key, value)

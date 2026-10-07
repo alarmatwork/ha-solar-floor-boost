@@ -133,6 +133,12 @@ class BoostManager:
         return remove
 
     @callback
+    def async_set_default(self, key: str, value: float) -> None:
+        """Set the default ``delta`` or ``duration``; every entity showing it updates."""
+        setattr(self, key, value)
+        self._notify()
+
+    @callback
     def _notify(self) -> None:
         for update_callback in list(self._listeners):
             update_callback()

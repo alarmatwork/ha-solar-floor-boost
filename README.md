@@ -36,7 +36,8 @@ You can change both later via **Configure**.
 | --- | --- |
 | `switch.solar_floor_boost_boost` | On starts a boost with the values below; off stops it and restores the original targets. |
 | `number.solar_floor_boost_boost_amount` | Degrees to add (default 1 °C). |
-| `number.solar_floor_boost_boost_duration` | Minutes (default 120). The dashboard card shows it as a 15m … 12h preset slider. |
+| `select.solar_floor_boost_boost_duration` | Duration presets: 15m, 30m, 45m, 1h, 1h 30m, 2h, 2h 30m, 3h, 3h 30m, 4h, 5h, 6h, 8h, 12h (default 2h). |
+| `number.solar_floor_boost_boost_duration` | The same duration in minutes, for automations and older cards. Hidden on the device page; any value from 15 to 720. |
 | `sensor.solar_floor_boost_boost_ends` | When the boost ends. Attributes list each thermostat's original (`baseline`) and boosted (`target`) value. |
 
 ## Dashboard card
@@ -63,7 +64,7 @@ entities:
     name: Boost
   - entity: number.solar_floor_boost_boost_amount
     name: Boost amount
-  - type: custom:solar-floor-boost-duration-row  # preset slider (15m … 12h)
+  - type: custom:solar-floor-boost-duration-row  # preset slider (15m, 30m, 45m, 1h, 1h 30m, 2h, 2h 30m, 3h, 3h 30m, 4h, 5h, 6h, 8h, 12h)
     entity: number.solar_floor_boost_boost_duration
     name: Boost duration
   - type: conditional
