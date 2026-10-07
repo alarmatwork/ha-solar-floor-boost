@@ -40,7 +40,7 @@ def t(hass, eid):
 async def test_switch_boost_and_restore(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
     entry, calls = await _setup(hass)
     assert hass.states.get("number.solar_floor_boost_boost_amount").state == "1.0"
-    assert hass.states.get("number.solar_floor_boost_boost_duration").state == "120"
+    assert hass.states.get("select.solar_floor_boost_boost_duration").state == "2h"
     await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.solar_floor_boost_boost"}, blocking=True)
     assert t(hass, A) == 23.0
     assert t(hass, B) == 28.0  # capped by max_temperature
@@ -136,3 +136,34 @@ async def test_dashboard_card_registered(hass: HomeAssistant):
     assert paths[0].path.endswith("frontend/solar-floor-boost-card.js")
     (_, url), _ = add_js.call_args
     assert url.startswith("/solar_floor_boost/solar-floor-boost-card.js?v=")
+
+
+async def test_duration_select(hass: HomeAssistant, freezer):
+    entry, calls = await _setup(hass)
+    state = hass.states.get("select.solar_floor_boost_boost_duration")
+    assert state.attributes["options"] == [
+        "15m", "30m", "45m", "1h", "1h 30m", "2h", "2h 30m", "3h", "4h", "5h", "6h", "8h", "12h",
+    ]
+    await hass.services.async_call(
+        "select", "select_option",
+        {"entity_id": "select.solar_floor_boost_boost_duration", "option": "15m"}, blocking=True,
+    )
+    await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.solar_floor_boost_boost"}, blocking=True)
+    assert t(hass, A) == 23.0
+    freezer.tick(timedelta(minutes=16))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert t(hass, A) == 22.0
+
+
+async def test_old_duration_number_removed(hass: HomeAssistant):
+    from homeassistant.helpers import entity_registry as er
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Solar Floor Boost", options={"climate_entities": [], "max_temperature": 28})
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    registry.async_get_or_create("number", DOMAIN, f"{entry.entry_id}_duration", config_entry=entry)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert registry.async_get_entity_id("number", DOMAIN, f"{entry.entry_id}_duration") is None
+    assert registry.async_get_entity_id("number", DOMAIN, f"{entry.entry_id}_delta")

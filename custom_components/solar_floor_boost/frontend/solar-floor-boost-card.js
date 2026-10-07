@@ -7,7 +7,7 @@ const DOMAIN = "solar_floor_boost";
 const ROWS = {
   boost: ["switch.solar_floor_boost_boost", "Boost"],
   delta: ["number.solar_floor_boost_boost_amount", "Boost amount"],
-  duration: ["number.solar_floor_boost_boost_duration", "Boost duration"],
+  duration: ["select.solar_floor_boost_boost_duration", "Boost duration"],
   boost_end: ["sensor.solar_floor_boost_boost_ends", "Boost ends"],
 };
 
@@ -32,7 +32,11 @@ function entitiesCardConfig(config, ids) {
     entities: [
       { entity: ids.boost, name: ROWS.boost[1] },
       { entity: ids.delta, name: ROWS.delta[1] },
-      { entity: ids.duration, name: ROWS.duration[1] },
+      {
+        type: "custom:solar-floor-boost-duration-row",
+        entity: ids.duration,
+        name: ROWS.duration[1],
+      },
       {
         type: "conditional",
         conditions: [{ entity: ids.boost, state: "on" }],
@@ -94,6 +98,80 @@ class SolarFloorBoostCard extends HTMLElement {
   getGridOptions() {
     return { columns: 12, min_columns: 6 };
   }
+}
+
+// Slider row for a select entity: one evenly spaced step per option, the
+// option itself ("1h 30m") as the label. Usable in any entities card:
+//   - type: custom:solar-floor-boost-duration-row
+//     entity: select.solar_floor_boost_boost_duration
+class SolarFloorBoostDurationRow extends HTMLElement {
+  setConfig(config) {
+    if (!config.entity) throw new Error("entity is required");
+    this._config = config;
+    this._row = undefined;
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (!this._row) this._render();
+    this._row.hass = hass;
+    const state = hass.states[this._config.entity];
+    this._options = state?.attributes.options || [];
+    if (!this._dragging) {
+      this._input.max = Math.max(this._options.length - 1, 0);
+      this._input.value = Math.max(this._options.indexOf(state?.state), 0);
+      this._input.disabled = !state || state.state === "unavailable";
+      this._label.textContent = state ? state.state : "";
+    }
+  }
+
+  _render() {
+    const style = document.createElement("style");
+    style.textContent = `
+      .wrap { display: flex; align-items: center; gap: 12px; }
+      input { width: 140px; accent-color: var(--primary-color); cursor: pointer; }
+      .label { min-width: 4.5em; text-align: end; white-space: nowrap; }
+    `;
+    // HA's own row element gives the icon/name layout of the other rows.
+    const row = document.createElement("hui-generic-entity-row");
+    row.config = this._config;
+    const wrap = document.createElement("div");
+    wrap.className = "wrap";
+    this._input = Object.assign(document.createElement("input"), {
+      type: "range",
+      min: 0,
+      step: 1,
+    });
+    this._label = Object.assign(document.createElement("span"), {
+      className: "label",
+    });
+    this._input.addEventListener("click", (ev) => ev.stopPropagation());
+    this._input.addEventListener("input", () => {
+      this._dragging = true;
+      this._label.textContent = this._options[this._input.value] ?? "";
+    });
+    this._input.addEventListener("change", () => {
+      this._dragging = false;
+      const option = this._options[this._input.value];
+      if (option !== undefined) {
+        this._hass.callService("select", "select_option", {
+          entity_id: this._config.entity,
+          option,
+        });
+      }
+    });
+    wrap.append(this._input, this._label);
+    row.append(wrap);
+    this.replaceChildren(style, row);
+    this._row = row;
+  }
+}
+
+if (!customElements.get("solar-floor-boost-duration-row")) {
+  customElements.define(
+    "solar-floor-boost-duration-row",
+    SolarFloorBoostDurationRow
+  );
 }
 
 if (!customElements.get("solar-floor-boost-card")) {

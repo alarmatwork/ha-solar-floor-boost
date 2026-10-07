@@ -33,18 +33,30 @@
   },
   "entity": {
     "number": {
-      "delta": { "name": "Boost amount" },
-      "duration": { "name": "Boost duration" }
+      "delta": {
+        "name": "Boost amount"
+      }
+    },
+    "select": {
+      "duration": {
+        "name": "Boost duration"
+      }
     },
     "sensor": {
-      "boost_end": { "name": "Boost ends" }
+      "boost_end": {
+        "name": "Boost ends"
+      }
     },
     "switch": {
-      "boost": { "name": "Boost" }
+      "boost": {
+        "name": "Boost"
+      }
     }
   },
   "exceptions": {
-    "not_loaded": { "message": "Solar Floor Boost is not set up." }
+    "not_loaded": {
+      "message": "Solar Floor Boost is not set up."
+    }
   },
   "services": {
     "start": {

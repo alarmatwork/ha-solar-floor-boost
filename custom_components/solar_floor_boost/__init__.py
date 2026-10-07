@@ -14,6 +14,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ServiceValidationError
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
@@ -27,7 +28,7 @@ from .const import (
     SERVICE_STOP,
 )
 
-PLATFORMS = [Platform.NUMBER, Platform.SENSOR, Platform.SWITCH]
+PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.SWITCH]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -90,6 +91,13 @@ async def _async_register_card(hass: HomeAssistant) -> None:
 async def async_setup_entry(
     hass: HomeAssistant, entry: SolarFloorBoostConfigEntry
 ) -> bool:
+    # Up to 1.2.x the duration was a number entity; it's a select now.
+    registry = er.async_get(hass)
+    if old := registry.async_get_entity_id(
+        Platform.NUMBER, DOMAIN, f"{entry.entry_id}_duration"
+    ):
+        registry.async_remove(old)
+
     manager = BoostManager(hass, entry)
     await manager.async_load()
     entry.runtime_data = manager
