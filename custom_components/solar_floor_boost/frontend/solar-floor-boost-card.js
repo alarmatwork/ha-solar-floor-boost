@@ -96,6 +96,16 @@ if (!customElements.get("solar-floor-boost-card")) {
     name: "Solar Floor Boost",
     description: "Start/stop the boost, set amount and duration, see when it ends.",
     preview: true,
+    // HA 2026.6+: offer this card in "By entity" for any of our entities.
+    getEntitySuggestion: (hass, entityId) =>
+      hass.entities?.[entityId]?.platform === DOMAIN
+        ? [
+            {
+              label: "Solar Floor Boost",
+              config: { type: "custom:solar-floor-boost-card" },
+            },
+          ]
+        : null,
     documentationURL: "https://github.com/alarmatwork/ha-solar-floor-boost",
   });
 }

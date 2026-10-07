@@ -42,7 +42,9 @@ You can change both later via **Configure**.
 ## Dashboard card
 
 The integration ships the card in the screenshot. Edit dashboard → **Add card**
-→ **By card** (or **Browse all cards**) → **Solar Floor Boost**:
+→ **By card** (or **Browse all cards**) → **Solar Floor Boost**. On Home
+Assistant 2026.6+ it is also suggested under **By entity** (Community section)
+when you pick any Solar Floor Boost entity.
 
 ```yaml
 type: custom:solar-floor-boost-card

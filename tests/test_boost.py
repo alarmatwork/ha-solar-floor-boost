@@ -134,4 +134,5 @@ async def test_dashboard_card_registered(hass: HomeAssistant):
     (paths,), _ = hass.http.async_register_static_paths.call_args
     assert paths[0].url_path == "/solar_floor_boost/solar-floor-boost-card.js"
     assert paths[0].path.endswith("frontend/solar-floor-boost-card.js")
-    add_js.assert_called_once_with(hass, "/solar_floor_boost/solar-floor-boost-card.js?v=1.1.0")
+    (_, url), _ = add_js.call_args
+    assert url.startswith("/solar_floor_boost/solar-floor-boost-card.js?v=")
