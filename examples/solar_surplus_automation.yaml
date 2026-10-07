@@ -1,38 +1,45 @@
-# Solar surplus -> raise floor heating.
-# Paste into Settings > Automations > Create > ⋮ > Edit in YAML,
-# then replace the sensor entity IDs with your own.
+# Solar surplus -> raise floor heating (requires the Solar Floor Boost integration)
+# Paste into Settings > Automations > Create > ⋮ > Edit in YAML, then replace
+# the sensor entity IDs with your own (see the README).
 alias: "Solar surplus - boost floor heating"
-description: "Battery full, sun still producing and cold outside: store surplus as heat"
+description: >
+  Battery above 90%, sunshine left today and cold outside:
+  store surplus as heat in the configured thermostats for 2 hours
 mode: single
 triggers:
   - trigger: numeric_state
     entity_id: sensor.battery_soc
-    above: 97
+    above: 90
     for: "00:05:00"
   # Re-check regularly so a new boost starts after the previous one ends
   - trigger: time_pattern
     minutes: "/10"
 conditions:
+  # Not already boosting
   - condition: state
     entity_id: switch.solar_floor_boost_boost
     state: "off"
   - condition: numeric_state
     entity_id: sensor.battery_soc
-    above: 97
-  # Still enough sun to store (W)
+    above: 90
+  # Sunshine left by the clock: daytime, and at least 2 h (the boost
+  # length) before sunset
+  - condition: sun
+    after: sunrise
+    before: sunset
+    before_offset: "-02:00:00"
+  # Sunshine left by the forecast (kWh still to be produced today),
+  # from the Forecast.Solar integration
   - condition: numeric_state
-    entity_id: sensor.pv_power
-    above: 1500
+    entity_id: sensor.energy_production_today_remaining
+    above: 3
   - condition: numeric_state
     entity_id: weather.home
     attribute: temperature
     below: 20
 actions:
+  # Amount comes from the integration's "Boost amount" setting; all
+  # configured thermostats are boosted.
   - action: solar_floor_boost.start
     data:
-      delta: 2
       duration: 120
-      # Optional: limit to some thermostats, otherwise all configured ones
-      # climate_entities:
-      #   - climate.living_room
-      #   - climate.kitchen

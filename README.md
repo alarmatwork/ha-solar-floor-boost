@@ -91,8 +91,65 @@ data:
 action: solar_floor_boost.stop
 ```
 
-See [examples/solar_surplus_automation.yaml](examples/solar_surplus_automation.yaml)
-for a complete "battery full + sun + cold outside" automation.
+## Example automation: boost with solar surplus
+
+[examples/solar_surplus_automation.yaml](examples/solar_surplus_automation.yaml)
+boosts all configured thermostats for 2 hours when all of these are true:
+
+| Condition | Rule |
+| --- | --- |
+| Battery | state of charge above **90 %** |
+| Sunshine left by the clock | after sunrise and at least **2 h before sunset**, so the boost ends while the sun is still up |
+| Sunshine left by the forecast | more than **3 kWh** still forecast for today |
+| Outside temperature | below **20 °C** |
+| Not already boosting | the Boost switch is off |
+
+It checks when the battery has been above 90 % for 5 minutes and every 10
+minutes after that, so while the conditions hold a new boost starts after each
+one ends. The amount comes from the **Boost amount** entity; add `delta: 2`
+under `duration` to fix it in the automation instead.
+
+### Solar forecast (optional, recommended)
+
+The "sunshine left" check uses the
+[Forecast.Solar](https://www.home-assistant.io/integrations/forecast_solar/)
+integration, which estimates your panels' production from the weather
+forecast. It's free and needs no account.
+
+1. Settings → Devices & services → **Add integration** → **Forecast.Solar**.
+2. Enter your panels' **latitude/longitude** (defaults to your home location),
+   **declination** (tilt: 0° flat, 90° vertical), **azimuth** (180° = south),
+   and **total modules power** in Wp. Add the integration once per roof
+   plane if your panels face different directions.
+3. Use its **Estimated energy production - remaining today** sensor (kWh) in
+   the automation. The entity ID is usually
+   `sensor.energy_production_today_remaining`; check
+   Developer Tools → States, as it can have a suffix (for example after
+   renaming the service or adding a second plane).
+
+Without Forecast.Solar, delete that condition, or replace it with a check on
+your inverter's current PV power, for example:
+
+```yaml
+  - condition: numeric_state
+    entity_id: sensor.pv_power   # your inverter's PV power in W
+    above: 1500
+```
+
+### Deploy the automation
+
+1. Settings → Automations & scenes → **Create automation** →
+   **Create new automation** → ⋮ → **Edit in YAML**.
+2. Paste the example and replace the entity IDs with your own:
+   `sensor.battery_soc` (battery state of charge, %),
+   `sensor.energy_production_today_remaining` (Forecast.Solar) and
+   `weather.home` (any weather entity).
+3. **Save**. To test it, open the automation → ⋮ → **Run actions**: that starts
+   a boost immediately, ignoring the conditions.
+
+In the automation editor, each condition shows a live ✓ or ✕: whether it's
+true right now. A ✕ is not an error, just a condition that currently blocks
+the boost (for example a boost already running).
 
 ## Behaviour
 
