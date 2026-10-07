@@ -53,6 +53,7 @@ class SolarFloorBoostCard extends HTMLElement {
 
   setConfig(config) {
     this._config = config || {};
+    this._card = undefined;
     this._build();
   }
 
@@ -60,7 +61,9 @@ class SolarFloorBoostCard extends HTMLElement {
     this._hass = hass;
     if (this._card) {
       this._card.hass = hass;
-    } else {
+    } else if (!this._building) {
+      // hass updates arrive constantly; only start a build if none is
+      // running, otherwise a busy home would restart it forever.
       this._build();
     }
   }
@@ -68,15 +71,20 @@ class SolarFloorBoostCard extends HTMLElement {
   async _build() {
     if (!this._config || !this._hass) return;
     const build = (this._buildId = (this._buildId || 0) + 1);
-    const helpers = await window.loadCardHelpers();
-    // A newer setConfig/hass call started another build meanwhile.
-    if (build !== this._buildId) return;
-    const card = helpers.createCardElement(
-      entitiesCardConfig(this._config, findEntities(this._hass))
-    );
-    card.hass = this._hass;
-    this.replaceChildren(card);
-    this._card = card;
+    this._building = true;
+    try {
+      const helpers = await window.loadCardHelpers();
+      // A newer setConfig started another build meanwhile.
+      if (build !== this._buildId) return;
+      const card = helpers.createCardElement(
+        entitiesCardConfig(this._config, findEntities(this._hass))
+      );
+      card.hass = this._hass;
+      this.replaceChildren(card);
+      this._card = card;
+    } finally {
+      if (build === this._buildId) this._building = false;
+    }
   }
 
   getCardSize() {
